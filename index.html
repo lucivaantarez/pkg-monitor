@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saturnity Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#040608;--card:#080e14;--card2:#0b1520;--line:#0f2030;--line2:#1a3550;
+  --cyan:#00f0ff;--green:#00ff9d;--red:#ff2d55;--yellow:#ffd60a;
+  --dim:#1e4060;--txt:#8ab4cc;--txt2:#c8e0ee;
+  --mono:'Space Mono',monospace;--head:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--txt2);font-family:var(--mono);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(0,240,255,.035) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:20px 16px 60px}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+.hdr-left{display:flex;align-items:center;gap:13px}
+.hdr-title{font-family:var(--head);font-size:21px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.hdr-title span{color:var(--cyan)}
+.hdr-sub{font-size:8.5px;color:var(--dim);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.pill{display:flex;align-items:center;gap:5px;font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 11px;border-radius:20px}
+.pill-live{background:rgba(0,255,157,.07);border:1px solid rgba(0,255,157,.2);color:var(--green)}
+.pill-live .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s ease-in-out infinite;box-shadow:0 0 6px var(--green)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+.hide-btn{display:flex;align-items:center;gap:6px;font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 12px;border-radius:6px;cursor:pointer;user-select:none;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.18);color:var(--cyan);transition:all .15s;font-family:var(--mono)}
+.hide-btn:hover{background:rgba(0,240,255,.12);border-color:rgba(0,240,255,.35)}
+.hide-btn.active{background:rgba(255,45,85,.08);border-color:rgba(255,45,85,.3);color:var(--red)}
+.hide-btn svg{width:12px;height:12px;flex-shrink:0}
+
+.upd{font-size:8.5px;color:var(--dim);letter-spacing:1px}
+
+/* countdown ring */
+.cring{width:26px;height:26px;position:relative;flex-shrink:0}
+.cring svg{transform:rotate(-90deg)}
+.crn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;color:var(--cyan)}
+
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;position:relative;overflow:hidden}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.scard.total::before{background:linear-gradient(90deg,var(--cyan),#006eff)}
+.scard.active::before{background:linear-gradient(90deg,var(--green),#00bb66)}
+.scard.closed::before{background:linear-gradient(90deg,#1a3550,#0a1f30)}
+.scard-label{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.scard-val{font-size:32px;font-weight:700;font-family:var(--head);line-height:1}
+.scard.total .scard-val{color:var(--cyan)}
+.scard.active .scard-val{color:var(--green)}
+.scard.closed .scard-val{color:#2a5070}
+
+.errbanner{display:none;gap:8px;align-items:center;background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.2);color:var(--red);border-radius:8px;padding:10px 13px;margin-bottom:14px;font-size:10px}
+.errbanner.show{display:flex}
+
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:13px}
+
+.wcard{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;animation:rise .35s ease both;transition:border-color .2s,box-shadow .2s}
+.wcard:hover{border-color:var(--line2);box-shadow:0 6px 28px rgba(0,0,0,.45)}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.wcard-strip{height:3px;background:linear-gradient(90deg,var(--cyan),#0055ee)}
+.wcard-hdr{background:var(--card2);padding:9px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.wcard-bot{font-size:10.5px;color:var(--cyan);display:flex;align-items:center;gap:7px}
+.wcard-bot-icon{width:19px;height:19px;background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.18);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px}
+.wcard-badges{display:flex;gap:5px;align-items:center}
+.wbadge{font-size:7.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;font-weight:700}
+.wbadge-on{background:rgba(0,255,157,.1);color:var(--green);border:1px solid rgba(0,255,157,.2)}
+.wbadge-t{background:rgba(0,0,0,.3);color:var(--dim);border:1px solid var(--line)}
+
+.age-bar-wrap{}
+.age-bar-track{height:2px;background:var(--line)}
+.age-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow) 65%,var(--red));transition:width .5s}
+
+.pkg-list{padding:7px 9px}
+.pkg-item{padding:8px 9px;border-radius:7px;margin-bottom:5px;background:rgba(0,0,0,.25);border:1px solid transparent;transition:border-color .15s,background .15s}
+.pkg-item:last-child{margin-bottom:0}
+.pkg-item.ig{border-color:rgba(0,255,157,.12);background:rgba(0,255,157,.025)}
+.pkg-item.cl{opacity:.5}
+.pkg-item:hover{background:rgba(255,255,255,.03);border-color:var(--line2)}
+
+.pkg-row1{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.status-badge{font-size:7px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0}
+.status-badge.ig{background:rgba(0,255,157,.12);color:var(--green);border:1px solid rgba(0,255,157,.25)}
+.status-badge.cl{background:rgba(30,64,96,.2);color:#2a5878;border:1px solid var(--line)}
+.pkg-pname{font-size:8.5px;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+
+.pkg-row2{display:flex;align-items:center;margin-bottom:5px}
+.pkg-uname{font-family:var(--head);font-size:13px;font-weight:700;color:#deedf8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+
+.pkg-row3{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.id-label{font-size:7.5px;color:var(--dim);letter-spacing:1px;flex-shrink:0}
+.pkg-id{font-size:9px;color:#2a6080;font-family:var(--mono)}
+
+.pkg-row4{display:flex;align-items:center;gap:8px}
+.cpu-block{display:flex;align-items:center;gap:5px;flex:1}
+.cpu-val{font-size:10px;font-weight:700;min-width:36px}
+.cpu-track{flex:1;height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.cpu-fill{height:100%;border-radius:2px;transition:width .5s}
+.pkg-mem{font-size:8.5px;color:var(--txt);opacity:.75;min-width:52px;text-align:right}
+.pkg-time{font-size:8.5px;color:var(--dim);min-width:52px;text-align:right}
+
+body.hide-private .pkg-uname{filter:blur(6px);transition:filter .2s}
+body.hide-private .pkg-id{filter:blur(4px);transition:filter .2s}
+body.hide-private .pkg-uname:hover,body.hide-private .pkg-id:hover{filter:blur(0)}
+
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--dim)}
+.ei{font-size:40px;margin-bottom:12px;opacity:.3}
+.et{font-size:13px;letter-spacing:3px;text-transform:uppercase;font-family:var(--head);margin-bottom:6px;color:#2a5878}
+.es{font-size:10px;line-height:2;color:var(--dim)}
+
+@media(max-width:600px){#grid{grid-template-columns:1fr}.scard-val{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="hdr-left">
+      <div>
+        <div class="hdr-title">SATURNITY <span>MONITOR</span></div>
+        <div class="hdr-sub">Discord Channel · Live Dashboard</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hide-btn" id="hideBtn" onclick="toggleHide()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span id="hideTxt">Hide Identity</span>
+      </div>
+      <div class="upd" id="ts">–</div>
+      <div class="cring">
+        <svg width="26" height="26" viewBox="0 0 26 26">
+          <circle cx="13" cy="13" r="10" fill="none" stroke="rgba(0,240,255,0.1)" stroke-width="2.5"/>
+          <circle id="arc" cx="13" cy="13" r="10" fill="none" stroke="#00f0ff" stroke-width="2.5" stroke-dasharray="62.8" stroke-dashoffset="0" stroke-linecap="round"/>
+        </svg>
+        <div class="crn" id="crn">10</div>
+      </div>
+      <div class="pill pill-live"><div class="dot"></div>Live</div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="scard total"><div class="scard-label">Total Packages</div><div class="scard-val" id="s-t">–</div></div>
+    <div class="scard active"><div class="scard-label">In-Game</div><div class="scard-val" id="s-a">–</div></div>
+    <div class="scard closed"><div class="scard-label">Closed</div><div class="scard-val" id="s-c">–</div></div>
+  </div>
+
+  <div class="errbanner" id="err"><span>✕</span><span id="errmsg">–</span></div>
+
+  <div id="grid">
+    <div class="empty"><div class="ei">📡</div><div class="et">Connecting…</div><div class="es">Fetching from Discord.</div></div>
+  </div>
+</div>
+<script>
+var WORKER_URL = "https://aged-frog-3fbc.susilobambangyowaimo.workers.dev";
+var POLL=10000, INACTIVE=1800, CIRC=62.8;
+var cd=10, hidden=false;
+
+function cpuColor(p){return p<60?"#00ff9d":p<85?"#ffd60a":"#ff2d55"}
+function agePct(s){return Math.min((s/INACTIVE)*100,100)}
+function minsLeft(s){return Math.max(0,Math.round((INACTIVE-s)/60))}
+
+function pkgRow(p){
+  var ig=p.status==="IN-GAME", col=cpuColor(parseFloat(p.cpu)||0);
+  var cpu=parseFloat(p.cpu)||0;
+  return '<div class="pkg-item '+(ig?"ig":"cl")+'">'
+    +'<div class="pkg-row1">'
+    +'<span class="status-badge '+(ig?"ig":"cl")+'">'+(ig?"IN-GAME":"CLOSED")+'</span>'
+    +'<div class="pkg-pname">'+p.package+'</div>'
+    +'</div>'
+    +'<div class="pkg-row2"><div class="pkg-uname">'+p.username+'</div></div>'
+    +'<div class="pkg-row3"><span class="id-label">ID</span><span class="pkg-id">'+p.device_id+'</span></div>'
+    +'<div class="pkg-row4">'
+    +'<div class="cpu-block">'
+    +'<span class="cpu-val" style="color:'+col+'">'+p.cpu+'</span>'
+    +'<div class="cpu-track"><div class="cpu-fill" style="width:'+cpu+'%;background:'+col+'"></div></div>'
+    +'</div>'
+    +'<span class="pkg-mem">'+p.memory+'</span>'
+    +'<span class="pkg-time">'+p.time+'</span>'
+    +'</div>'
+    +'</div>';
+}
+
+function buildCard(c,i){
+  var active=c.packages.filter(function(p){return p.status==="IN-GAME"}).length;
+  var age=agePct(c.age_seconds), ml=minsLeft(c.age_seconds);
+  return '<div class="wcard" style="animation-delay:'+(i*0.08).toFixed(2)+'s">'
+    +'<div class="wcard-strip"></div>'
+    +'<div class="wcard-hdr">'
+    +'<div class="wcard-bot"><div class="wcard-bot-icon">🤖</div>'+c.bot_name+'</div>'
+    +'<div class="wcard-badges">'
+    +'<span class="wbadge wbadge-on">'+active+'/'+c.packages.length+'</span>'
+    +'<span class="wbadge wbadge-t">'+ml+'m left</span>'
+    +'</div></div>'
+    +'<div class="age-bar-wrap"><div class="age-bar-track"><div class="age-bar-fill" style="width:'+age+'%"></div></div></div>'
+    +'<div class="pkg-list">'+c.packages.map(pkgRow).join("")+'</div>'
+    +'</div>';
+}
+
+async function go(){
+  cd=POLL/1000;
+  var eb=document.getElementById("err");
+  try{
+    var r=await fetch(WORKER_URL+"/status",{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    var d=await r.json();
+    if(d.error) throw new Error(d.error);
+
+    document.getElementById("s-t").textContent=d.total_packages||0;
+    document.getElementById("s-a").textContent=d.active||0;
+    document.getElementById("s-c").textContent=d.closed||0;
+    document.getElementById("ts").textContent="UPDATED "+new Date().toLocaleTimeString("id-ID",{hour12:false});
+
+    var g=document.getElementById("grid");
+    if(!d.cards||!d.cards.length){
+      g.innerHTML='<div class="empty"><div class="ei">📭</div><div class="et">No active packages</div><div class="es">No webhook messages in last 30 minutes.</div></div>';
+    } else {
+      g.innerHTML=d.cards.map(buildCard).join("");
+    }
+    eb.classList.remove("show");
+  }catch(e){
+    document.getElementById("errmsg").textContent="Error: "+e.message;
+    eb.classList.add("show");
+  }
+}
+
+function tick(){
+  cd--;
+  if(cd<0)cd=POLL/1000;
+  document.getElementById("crn").textContent=cd;
+  document.getElementById("arc").style.strokeDashoffset=CIRC*(1-cd/(POLL/1000));
+  if(cd===0)go();
+}
+
+function toggleHide(){
+  hidden=!hidden;
+  document.body.classList.toggle("hide-private",hidden);
+  var btn=document.getElementById("hideBtn");
+  var txt=document.getElementById("hideTxt");
+  btn.classList.toggle("active",hidden);
+  if(hidden){
+    txt.textContent="Show Identity";
+    btn.querySelector("svg").innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    txt.textContent="Hide Identity";
+    btn.querySelector("svg").innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+go();
+setInterval(tick,1000);
+</script>
+</body>
+</html>

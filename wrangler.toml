@@ -1,0 +1,7 @@
+name = "aged-frog-3fbc"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+DISCORD_CHANNEL_ID = "1474260121902121102"
+# DISCORD_BOT_TOKEN is set as a Secret in Cloudflare dashboard, NOT here
