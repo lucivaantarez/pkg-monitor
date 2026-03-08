@@ -406,10 +406,11 @@ async function go() {
     if (d.error) throw new Error(d.error);
 
     // Update stats
-    document.getElementById("s-g").textContent = d.cards ? d.cards.length : 0;
-    document.getElementById("s-t").textContent = d.total_packages||0;
-    document.getElementById("s-a").textContent = d.active||0;
-    document.getElementById("s-c").textContent = d.closed||0;
+    lastStats.g = d.cards ? d.cards.length : 0;
+    lastStats.t = d.total_packages||0;
+    lastStats.a = d.active||0;
+    lastStats.c = d.closed||0;
+    updateStats();
     document.getElementById("ts").textContent = "UPDATED "+new Date().toLocaleTimeString("id-ID",{hour12:false});
 
     var g = document.getElementById("grid");
@@ -524,11 +525,20 @@ function tick() {
 
 // ── HIDE IDENTITY ──
 var hidden = false;
+var lastStats = {g:0,t:0,a:0,c:0};
+function updateStats(){
+  var m = hidden ? 5 : 1;
+  document.getElementById("s-g").textContent = lastStats.g * m;
+  document.getElementById("s-t").textContent = lastStats.t * m;
+  document.getElementById("s-a").textContent = lastStats.a * m;
+  document.getElementById("s-c").textContent = lastStats.c * m;
+}
 function toggleHide() {
   hidden = !hidden;
   document.body.classList.toggle("hide-id", hidden);
   document.getElementById("hideBtn").classList.toggle("active", hidden);
   document.getElementById("hideTxt").textContent = hidden ? "Show Identity" : "Hide Identity";
+  updateStats();
 }
 
 // ── VISIBILITY API — skip fetch when tab hidden ──
