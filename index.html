@@ -258,34 +258,15 @@ function agePct(s){return Math.min((s/INACTIVE)*100,100)}
 function minsLeft(s){return Math.max(0,Math.round((INACTIVE-s)/60))}
 
 function lastActiveLabel(timeStr) {
+  // timeStr is HH:MM:SS — just show it directly, no timezone math
   if (!timeStr) return "";
-  // timeStr is HH:MM:SS from the bot — compute how long ago
-  var now = new Date();
-  var parts = timeStr.split(":");
-  if (parts.length < 3) return timeStr;
-  var then = new Date();
-  then.setHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0);
-  // Handle day rollover
-  if (then > now) then.setDate(then.getDate() - 1);
-  var diff = Math.floor((now - then) / 1000);
-  if (diff < 0) return timeStr;
-  if (diff < 60) return diff + "s ago";
-  if (diff < 3600) return Math.floor(diff/60) + "m ago";
-  return Math.floor(diff/3600) + "h ago";
+  return timeStr;
 }
 
 function lastActiveClass(timeStr) {
-  if (!timeStr) return "";
-  var parts = timeStr.split(":");
-  if (parts.length < 3) return "";
-  var now = new Date();
-  var then = new Date();
-  then.setHours(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]), 0);
-  if (then > now) then.setDate(then.getDate() - 1);
-  var diff = Math.floor((now - then) / 60);
-  if (diff < 5) return "recent";
-  if (diff < 15) return "mid";
-  return "old";
+  // Can't reliably compute age from HH:MM:SS without knowing timezone
+  // Just return recent always so it doesn't show misleading red
+  return "recent";
 }
 
 function showToast(msg) {
